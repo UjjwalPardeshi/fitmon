@@ -6,8 +6,6 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, BackgroundTasks
 import threading
 
-
-
 app = FastAPI()
 
 # Initialize MediaPipe Pose
@@ -15,9 +13,19 @@ mp_pose = mp.solutions.pose
 
 # Global counters
 counter_bicep = 0
+counter_bench_press = 0
 counter_squats = 0
-stage_bicep = None 
+counter_lateral_raises = 0
+counter_shoulder_press = 0
+counter_triceps_extension = 0
+counter_front_raises = 0
+stage_front_raises = None
+stage_bench_press = None
+stage_triceps_extension = None
+stage_shoulder_press = None
 stage_bicep = None
+stage_squats = None
+stage_lateral_raises = None
 
 # WebSocket clients
 connected_clients = set()
@@ -38,7 +46,7 @@ async def send_ws_message(message):
 
 def exercise_analysis(exercise):
     """Handles exercise counting and WebSocket communication."""
-    global counter_squats, counter_bicep, stage_bicep, stage_squats
+    global counter_bicep, counter_front_raises, counter_squats,counter_bench_press, counter_triceps_extension, counter_lateral_raises, counter_shoulder_press, stage_bench_press,stage_front_raises, stage_triceps_extension, stage_shoulder_press, stage_bicep, stage_squats, stage_lateral_raises
     
     cap = cv2.VideoCapture(1)  # Open camera
 
@@ -61,13 +69,62 @@ def exercise_analysis(exercise):
 
                     angle = calculate_angle(shoulder, elbow, wrist)
 
-                    if angle > 140:
+                    if angle > 130:
                         stage_bicep = "down"
                     if angle < 40 and stage_bicep == "down":
                         stage_bicep = "up"
                         counter_bicep += 1
 
                     message = {"exercise": "bicep_curl", "reps": counter_bicep}
+
+                
+                elif exercise == "triceps_extension":
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+            
+                    # Calculate angle
+                    angle = calculate_angle(shoulder, elbow, wrist)
+
+                    if angle < 40:
+                        stage_triceps_extension = "down"
+                    if angle > 140 and stage_triceps_extension == "down":
+                        stage_triceps_extension = "up"
+                        counter_triceps_extension += 1
+
+                    message = {"exercise": "triceps_extension", "reps": counter_triceps_extension}
+                
+                elif exercise == "bench_press":
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+            
+                    # Calculate angle
+                    angle = calculate_angle(shoulder, elbow, wrist)
+
+                    if angle < 40:
+                        stage_bench_press = "down"
+                    if angle > 140 and stage_bench_press == "down":
+                        stage_bench_press = "up"
+                        counter_bench_press += 1
+
+                    message = {"exercise": "bench_press", "reps": counter_bench_press}
+
+                elif exercise == "shoulder_press":
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+            
+                    # Calculate angle
+                    angle = calculate_angle(elbow, shoulder, hip)
+
+                    if angle < 40:
+                        stage_shoulder_press = "down"
+                    if angle > 130 and stage_shoulder_press == "down":
+                        stage_shoulder_press = "up"
+                        counter_shoulder_press += 1
+
+                    message = {"exercise": "shoulder_press", "reps": counter_shoulder_press}
                     
                 elif exercise == "squats":
                     hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
@@ -83,6 +140,71 @@ def exercise_analysis(exercise):
                         counter_squats += 1
 
                     message = {"exercise": "squats", "reps": counter_squats}
+
+                elif exercise == "lateral_raises":
+                    hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+
+                # Get coordinates
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+            
+                # Calculate angle
+                    angle = calculate_angle(hip, shoulder, elbow)
+                    angle2 = calculate_angle(shoulder, elbow, wrist)
+
+
+                    if angle2 < 130:
+                        print('Bad form')
+                        bad_form = True  # Flag to track bad form
+                    else:
+                        bad_form = False  # Reset if form is correct
+
+                    if angle < 40:
+                        stage_lateral_raises = "down"
+
+                    if angle > 85 and stage_lateral_raises == 'down' and not bad_form:  # Only count if form is correct
+                        stage_lateral_raises = "up"
+                        counter_lateral_raises += 1
+                    print("Good rep:", counter_lateral_raises) 
+
+
+                    message = {"exercise": "lateral_raises", "reps": counter_lateral_raises}
+
+
+                elif exercise == "front_raises":
+                    hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+
+                # Get coordinates
+                    shoulder = [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                    elbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                    wrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+            
+                # Calculate angle
+                    angle = calculate_angle(hip, shoulder, elbow)
+                    angle2 = calculate_angle(shoulder, elbow, wrist)
+
+
+                    if angle2 < 130:
+                        print('Bad form')
+                        bad_form = True  # Flag to track bad form
+                    else:
+                        bad_form = False  # Reset if form is correct
+
+                    if angle < 40:
+                        stage_front_raises = "down"
+
+                    if angle > 85 and stage_front_raises == 'down' and not bad_form:  # Only count if form is correct
+                        stage_front_raises = "up"
+                        counter_front_raises += 1
+                    print("Good rep:", counter_front_raises) 
+
+
+                    message = {"exercise": "front_raises", "reps": counter_front_raises}
 
                 asyncio.run(send_ws_message(message))  # Send real-time data
 
@@ -102,7 +224,7 @@ def read_root():
 
 @app.get("/start/{exercise}")
 async def start_exercise(exercise: str, background_tasks: BackgroundTasks):
-    if exercise in ["bicep_curl", "squats"]:
+    if exercise in ["bicep_curl", "squats", "lateral_raises", "shoulder_press", "triceps_extension", "bench_press", "front_raises"]:
         background_tasks.add_task(lambda: exercise_analysis(exercise))
         return {"message": f"{exercise} exercise started!"}
     return {"error": "Invalid exercise type"}
@@ -118,4 +240,3 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()  # Keep connection alive
     except:
         connected_clients.remove(websocket)
-
