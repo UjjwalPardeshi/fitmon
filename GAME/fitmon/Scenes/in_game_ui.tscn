@@ -1,8 +1,8 @@
 [gd_scene load_steps=15 format=3 uid="uid://dimoxwv18d2ph"]
 
 [ext_resource type="Script" path="res://Scripts/popup_menu_manager.gd" id="1_hdbtw"]
-[ext_resource type="Texture2D" uid="uid://dgc73fbcuq5sc" path="res://Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/Sprite sheets/Sprite sheet for Basic Pack.png" id="1_jc114"]
-[ext_resource type="Texture2D" uid="uid://be5jqo75kj3px" path="res://Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/Sprite sheets/UI Settings Buttons.png" id="2_evf88"]
+[ext_resource type="Texture2D" uid="uid://dgc73fbcuq5sc" path="res://Assets/Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/Sprite sheets/Sprite sheet for Basic Pack.png" id="1_jc114"]
+[ext_resource type="Texture2D" uid="uid://be5jqo75kj3px" path="res://Assets/Sprout Lands - UI Pack - Basic pack/Sprout Lands - UI Pack - Basic pack/Sprite sheets/UI Settings Buttons.png" id="2_evf88"]
 [ext_resource type="Script" path="res://Scripts/stats_manager.gd" id="2_ewmhe"]
 [ext_resource type="FontFile" uid="uid://dal17dpiyy5vi" path="res://Fonts/RifficFree-Bold.ttf" id="2_kjqku"]
 

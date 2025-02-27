@@ -1,7 +1,99 @@
-[gd_scene format=3 uid="uid://ddtr36qj6ura0"]
+[gd_scene load_steps=6 format=3 uid="uid://ddtr36qj6ura0"]
+
+[ext_resource type="Texture2D" uid="uid://cb3i7h0l7nltw" path="res://Assets/background_glacial_mountains_lightened.png" id="1_1m285"]
+[ext_resource type="Texture2D" uid="uid://sh3baej7owy" path="res://Assets/Fantasy Battlers - Free/x2 size/01.png" id="2_w0k0b"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mqhmm"]
+bg_color = Color(0.896416, 0, 0.100858, 1)
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j7f5e"]
+bg_color = Color(0.113413, 0.789354, 0.121292, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s63m1"]
+bg_color = Color(0, 0, 0, 0.788235)
 
 [node name="Battle" type="Control"]
 layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_1m285")
+
+[node name="Enemy_Container" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -186.0
+offset_top = -158.0
+offset_right = 186.0
+offset_bottom = 158.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="Enemy_Container"]
+custom_minimum_size = Vector2(75, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 35
+theme_override_styles/background = SubResource("StyleBoxFlat_mqhmm")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j7f5e")
+value = 69.0
+show_percentage = false
+
+[node name="Label" type="Label" parent="Enemy_Container/ProgressBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 36
+text = "HP: 69/100"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Enemy" type="TextureRect" parent="Enemy_Container"]
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("2_w0k0b")
+stretch_mode = 5
+
+[node name="PlayerPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_s63m1")
+
+[node name="PlayerData" type="HBoxContainer" parent="PlayerPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
