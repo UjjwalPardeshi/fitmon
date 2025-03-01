@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Exercise Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>AI Exercise Tracker</h1>
+
+    <!-- Exercise Selection -->
+    <div id="controls">
+        <label for="exercise">Choose Exercise:</label>
+        <select id="exercise">
+            <option value="Bicep Curl">Bicep Curl</option>
+            <option value="Squat">Squat</option>
+            <option value="Lateral Raise">Lateral Raise</option>
+            <option value="Lunge">Lunge</option>
+            <option value="Triceps Extension">Triceps Extension</option> <!-- ✅ Added Triceps Extension -->
+        </select>
+        <button id="start-button" onclick="startExercise()">Start Exercise</button>
+    </div>
+
+    <!-- Video & Canvas -->
+    <div id="container">
+        <video id="video" width="640" height="480" autoplay></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Exercise Display -->
+    <div id="output">
+        <p id="exercise-name">Exercise: None</p>
+        <p id="counter">Bicep Curls: 0 | Squats: 0 | Lateral Raises: 0 | Lunges: 0 | Triceps Extensions: 0</p> <!-- ✅ Updated Counter -->
+    </div>
+
+    <!-- Scripts (Moved to End for Performance) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <script defer src="script.js"></script>
+</body>
+</html>

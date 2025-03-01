@@ -1,0 +1,22 @@
+body {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+p {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+video, canvas {
+    display: block;
+    margin: auto;
+    border: 2px solid black;
+    width: 640px;
+    height: 480px;
+}

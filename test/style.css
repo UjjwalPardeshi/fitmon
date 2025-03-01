@@ -1,0 +1,19 @@
+#container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    border: 2px solid black;
+}
+
+#exercise, #start-button {
+    margin: 10px;
+    padding: 8px;
+    font-size: 16px;
+}
+
+h1 {
+    text-align: center;
+}

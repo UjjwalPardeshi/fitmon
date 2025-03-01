@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=3 format=3 uid="uid://byp4sk6w51hvo"]
+
+[ext_resource type="Script" path="res://Scripts/baseEnemy.gd" id="1_nnka5"]
+[ext_resource type="Texture2D" uid="uid://bnw6gj784o57u" path="res://Assets/Fantasy Battlers - Free/x2 size/01b.png" id="2_70wml"]
+
+[resource]
+script = ExtResource("1_nnka5")
+name = "Pink Duck"
+texture = ExtResource("2_70wml")
+health = 20
+damage = 5
