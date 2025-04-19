@@ -19,14 +19,14 @@ let exerciseLocked = false; // Lock detection once an exercise is identified
 let stage = "down";
 let lastRepTime = 0;
 
-canvas.width = 640;
-canvas.height = 480;
+canvas.width = 1000;
+canvas.height = 600;
 
 async function setupCamera() {
     try {
         console.log("Requesting camera access...");
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480, facingMode: "user" },
+            video: { width: 1000, height: 600, facingMode: "user" },
         });
 
         video.srcObject = stream;
