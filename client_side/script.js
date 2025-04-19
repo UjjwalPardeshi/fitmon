@@ -8,7 +8,7 @@ let lastRepTimeRight = 0, lastRepTimeLeft = 0;
 let exerciseCounters = {
     "Bicep Curl": 0,
     "Squat": 0,
-    "Lateral Raise": 0,  // ✅ Added Lateral Raise counter
+    "Lateral Raise": 0, 
     "Lunge": 0,
     "Triceps Extension": 0
 };
@@ -65,18 +65,45 @@ async function loadModel() {
 }
 
 function drawPose(keypoints) {
-    ctx.strokeStyle = "blue";
-    ctx.lineWidth = 3;
-
-    keypoints.forEach(point => {
-        if (point && point.score > 0.5) {
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-            ctx.fillStyle = "red";
-            ctx.fill();
-        }
+    const connections = [
+      // Torso
+      [11, 12], [12, 24], [11, 23], [23, 24],
+      // Arms
+      [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], // Left
+      [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], // Right
+      // Legs
+      [23, 25], [25, 27], [27, 29], [29, 31], // Left leg
+      [24, 26], [26, 28], [28, 30], [30, 32], // Right leg
+      // Eyes and ears (head detail)
+      [1, 2], [2, 3], [3, 7], [0, 1], [0, 4], [4, 5], [5, 6], [6, 8]
+    ];
+  
+    // Draw keypoints
+    keypoints.forEach(kp => {
+      if (kp && kp.score > 0.5) {
+        ctx.beginPath();
+        ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.fill();
+      }
     });
-}
+  
+    // Draw skeleton connections
+    ctx.strokeStyle = "blue";
+    ctx.lineWidth = 2;
+  
+    connections.forEach(([i, j]) => {
+      const kp1 = keypoints[i];
+      const kp2 = keypoints[j];
+      if (kp1 && kp2 && kp1.score > 0.5 && kp2.score > 0.5) {
+        ctx.beginPath();
+        ctx.moveTo(kp1.x, kp1.y);
+        ctx.lineTo(kp2.x, kp2.y);
+        ctx.stroke();
+      }
+    });
+  }
+  
 
 async function detectPose() {
     if (!detector || video.paused || video.ended) return;

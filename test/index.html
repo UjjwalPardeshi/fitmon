@@ -1,42 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Exercise Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>🧘 Yoga Pose Trainer</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>AI Exercise Tracker</h1>
-
-    <!-- Exercise Selection -->
-    <div id="controls">
-        <label for="exercise">Choose Exercise:</label>
-        <select id="exercise">
-            <option value="Bicep Curl">Bicep Curl</option>
-            <option value="Squat">Squat</option>
-            <option value="Lateral Raise">Lateral Raise</option>
-            <option value="Lunge">Lunge</option>
-            <option value="Triceps Extension">Triceps Extension</option> <!-- ✅ Added Triceps Extension -->
-        </select>
-        <button id="start-button" onclick="startExercise()">Start Exercise</button>
+  <div class="container">
+    <div class="header">
+      <select id="pose-selector">
+        <option value="Tree">Tree</option>
+        <option value="Mountain">Mountain</option>
+        <option value="Warrior">Warrior</option>
+        <option value="Cobra">Cobra</option>
+      </select>
     </div>
 
-    <!-- Video & Canvas -->
-    <div id="container">
-        <video id="video" width="640" height="480" autoplay></video>
+    <div class="pose-info" id="pose-instructions">
+      <ul>
+        <li>Get into position. Tree pose often starts from mountain pose...</li>
+        <li>Bend one leg at the knee. Choose the leg you are going to fold in first...</li>
+        <li>Lengthen your body. Clasp your hands together in Anjali Mudra...</li>
+        <li>Hold and repeat. Hold the pose as long as necessary...</li>
+      </ul>
+      <button id="start-btn">Start Pose</button>
+    </div>
+
+    <div class="main">
+      <div class="stats" id="stats">
+        <div>Pose Time: <span id="pose-time">0</span>s</div>
+        <div>Best: <span id="best-time">0</span>s</div>
+        <button id="stop-btn">Stop Pose</button>
+      </div>
+
+      <div class="camera">
+        <video id="video" autoplay muted playsinline></video>
         <canvas id="canvas"></canvas>
-    </div>
+      </div>
+      
 
-    <!-- Exercise Display -->
-    <div id="output">
-        <p id="exercise-name">Exercise: None</p>
-        <p id="counter">Bicep Curls: 0 | Squats: 0 | Lateral Raises: 0 | Lunges: 0 | Triceps Extensions: 0</p> <!-- ✅ Updated Counter -->
+      <div class="pose-visual">
+        <img src="tree_pose.png" alt="Pose Guide" id="pose-image">
+      </div>
     </div>
+  </div>
 
-    <!-- Scripts (Moved to End for Performance) -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-    <script defer src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+  <script src="script.js"></script>
 </body>
 </html>
