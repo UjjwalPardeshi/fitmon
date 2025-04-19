@@ -1,0 +1,41 @@
+#container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  canvas {
+    border: 200px solid rgb(116, 46, 46);
+  }
+  
+  #exercise, #start-button {
+    margin: 10px;
+    padding: 8px;
+    font-size: 16px;
+  }
+  
+  h1 {
+    text-align: center;
+  }
+  
+  #video {
+    display: none;
+  }
+  
+  #big-counter {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  #big-count {
+    font-size: 80px;
+    font-weight: bold;
+    color: #0077ff;
+  }
+  
+  #big-label {
+    margin-top: -20px;
+    font-size: 24px;
+    color: #333;
+  }
+  

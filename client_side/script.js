@@ -1,399 +1,295 @@
-let detector;
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
+
 let stageRight = "down", stageLeft = "down";
 let lastRepTimeRight = 0, lastRepTimeLeft = 0;
+let stage = "down", lastRepTime = 0;
+let selectedExercise = null;
+let detector = null;
 
+let yogaTimer = null;
+let yogaStartTime = null;
+let yogaSeconds = 0;
 let exerciseCounters = {
-    "Bicep Curl": 0,
-    "Squat": 0,
-    "Lateral Raise": 0, 
-    "Lunge": 0,
-    "Triceps Extension": 0
+  "Bicep Curl": 0,
+  "Squat": 0,
+  "Lateral Raise": 0,
+  "Lunge": 0,
+  "Triceps Extension": 0
+};
+
+const exerciseList = {
+  "Bicep Curl": countBicepCurls,
+  "Squat": countSquats,
+  "Lateral Raise": countLateralRaises,
+  "Lunge": countLunges,
+  "Triceps Extension": countTricepsExtensions
 };
 
 
-let detectedExercise = "Unknown";
-let exerciseLocked = false; // Lock detection once an exercise is identified
-let stage = "down";
-let lastRepTime = 0;
 
-canvas.width = 1000;
-canvas.height = 600;
+function startYoga() {
+  selectedExercise = "Yoga";
+  document.getElementById("exercise-name").innerText = "Exercise: Yoga 🧘";
+  document.getElementById("yoga-seconds").innerText = "0";
+  setupCamera().then(() => {
+    loadModel().then(() => {
+      detectYogaPose(); // Not detectPose()
+    });
+  });
+}
+
+async function detectYogaPose() {
+  if (!detector || video.paused || video.ended) return;
+
+  const poses = await detector.estimatePoses(video);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  if (poses.length > 0 && poses[0].keypoints) {
+    const keypoints = poses[0].keypoints;
+    drawPose(keypoints);
+
+    const isCorrect = isTreePose(keypoints);
+
+    if (isCorrect) {
+      if (!yogaStartTime) {
+        yogaStartTime = Date.now();
+        yogaTimer = setInterval(() => {
+          yogaSeconds = Math.floor((Date.now() - yogaStartTime) / 1000);
+          document.getElementById("yoga-seconds").innerText = yogaSeconds;
+        }, 1000);
+      }
+    } else {
+      if (yogaTimer) {
+        clearInterval(yogaTimer);
+        yogaTimer = null;
+        yogaStartTime = null;
+        yogaSeconds = 0;
+        document.getElementById("yoga-seconds").innerText = "0";
+      }
+    }
+  }
+
+  requestAnimationFrame(detectYogaPose);
+}
+
+
+
+function startSpecificExercise(exerciseName) {
+  selectedExercise = exerciseName;
+  document.getElementById("exercise-name").innerText = `Exercise: ${selectedExercise}`;
+  setupCamera().then(() => {
+    loadModel().then(() => {
+      detectPose();
+    });
+  });
+}
 
 async function setupCamera() {
-    try {
-        console.log("Requesting camera access...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1000, height: 600, facingMode: "user" },
-        });
-
-        video.srcObject = stream;
-
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                video.style.display = "none";
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                console.log("Camera is ready!");
-                resolve();
-            };
-        });
-    } catch (error) {
-        console.error("Camera access error:", error);
-        alert("Camera error: Please allow access or check browser settings.");
-    }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1000, height: 600, facingMode: "user" }
+    });
+    video.srcObject = stream;
+    return new Promise((resolve) => {
+      video.onloadedmetadata = () => {
+        video.play();
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        resolve();
+      };
+    });
+  } catch (error) {
+    alert("Camera access error. Please check browser permissions.");
+  }
 }
 
 async function loadModel() {
-    try {
-        console.log("Loading pose detection model...");
-        detector = await poseDetection.createDetector(
-            poseDetection.SupportedModels.BlazePose, {
-                runtime: 'tfjs',
-                modelType: 'full'
-            }
-        );
-        console.log("Model loaded successfully!");
-        detectPose();
-    } catch (error) {
-        console.error("Error loading model:", error);
-        alert("Failed to load pose detection model. Check console for details.");
+  detector = await poseDetection.createDetector(
+    poseDetection.SupportedModels.BlazePose,
+    { runtime: 'tfjs', modelType: 'full' }
+  );
+}
+
+async function detectPose() {
+  if (!detector || video.paused || video.ended) return;
+
+  const poses = await detector.estimatePoses(video);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  if (poses.length > 0 && poses[0].keypoints) {
+    const keypoints = poses[0].keypoints;
+    drawPose(keypoints);
+
+    if (selectedExercise && exerciseList[selectedExercise]) {
+      exerciseList[selectedExercise](keypoints);
     }
+
+    updateExerciseCounters();
+  }
+
+  requestAnimationFrame(detectPose);
 }
 
 function drawPose(keypoints) {
-    const connections = [
-      // Torso
-      [11, 12], [12, 24], [11, 23], [23, 24],
-      // Arms
-      [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], // Left
-      [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], // Right
-      // Legs
-      [23, 25], [25, 27], [27, 29], [29, 31], // Left leg
-      [24, 26], [26, 28], [28, 30], [30, 32], // Right leg
-      // Eyes and ears (head detail)
-      [1, 2], [2, 3], [3, 7], [0, 1], [0, 4], [4, 5], [5, 6], [6, 8]
-    ];
-  
-    // Draw keypoints
-    keypoints.forEach(kp => {
-      if (kp && kp.score > 0.5) {
-        ctx.beginPath();
-        ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "red";
-        ctx.fill();
-      }
-    });
-  
-    // Draw skeleton connections
-    ctx.strokeStyle = "blue";
-    ctx.lineWidth = 2;
-  
-    connections.forEach(([i, j]) => {
-      const kp1 = keypoints[i];
-      const kp2 = keypoints[j];
-      if (kp1 && kp2 && kp1.score > 0.5 && kp2.score > 0.5) {
-        ctx.beginPath();
-        ctx.moveTo(kp1.x, kp1.y);
-        ctx.lineTo(kp2.x, kp2.y);
-        ctx.stroke();
-      }
-    });
-  }
-  
-
-async function detectPose() {
-    if (!detector || video.paused || video.ended) return;
-
-    try {
-        const poses = await detector.estimatePoses(video);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save();
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-        ctx.restore();
-
-        if (poses.length > 0 && poses[0].keypoints) {
-            let keypoints = poses[0].keypoints;
-
-            keypoints.forEach(point => {
-                if (point) {
-                    point.x = canvas.width - (point.x / video.videoWidth) * canvas.width;
-                    point.y = (point.y / video.videoHeight) * canvas.height;
-                }
-            });
-
-            drawPose(keypoints);
-
-            if (!exerciseLocked) {
-                let detected = detectExercise(keypoints);
-                if (detected !== "Unknown") {
-                    detectedExercise = detected;
-                    exerciseLocked = true;
-                    document.getElementById("exercise-name").innerText = `Detected Exercise: ${detectedExercise}`;
-                }
-            }
-
-            if (exerciseLocked) {
-                exerciseList[detectedExercise].count(keypoints);
-            }
-
-            updateExerciseCounters();
-        }
-    } catch (error) {
-        console.error("Pose detection error:", error);
+  const connections = [[11,12],[12,24],[11,23],[23,24],[11,13],[13,15],[12,14],[14,16],[23,25],[25,27],[24,26],[26,28]];
+  keypoints.forEach(kp => {
+    if (kp && kp.score > 0.5) {
+      ctx.beginPath();
+      ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "red";
+      ctx.fill();
     }
-
-    requestAnimationFrame(detectPose);
-}
-
-const exerciseList = {
-    "Bicep Curl": { detect: detectBicepCurl, count: countBicepCurls },
-    "Squat": { detect: detectSquat, count: countSquats },
-    "Lateral Raise": { detect: detectLateralRaise, count: countLateralRaises },
-    "Lunge": { detect: detectLunge, count: countLunges },
-    "Triceps Extension": { detect: detectTricepsExtension, count: countTricepsExtensions } // ✅ Added Triceps Extension
-};
-
-function detectExercise(keypoints) {
-    for (let ex in exerciseList) {
-        if (exerciseList[ex].detect(keypoints)) {
-            return ex;
-        }
+  });
+  ctx.strokeStyle = "blue";
+  ctx.lineWidth = 4;
+  connections.forEach(([i, j]) => {
+    const kp1 = keypoints[i], kp2 = keypoints[j];
+    if (kp1 && kp2 && kp1.score > 0.5 && kp2.score > 0.5) {
+      ctx.beginPath();
+      ctx.moveTo(kp1.x, kp1.y);
+      ctx.lineTo(kp2.x, kp2.y);
+      ctx.stroke();
     }
-    return "Unknown";
+  });
 }
-
-function startExercise() {
-    let exerciseDropdown = document.getElementById("exercise");
-    selectedExercise = exerciseDropdown.value; // ✅ Ensure selected exercise is updated
-    document.getElementById("exercise-name").innerText = `Exercise: ${selectedExercise}`;
-
-    console.log(`Starting exercise: ${selectedExercise}`);
-    detectPose(); // ✅ Start pose detection
-}
-
-function detectTricepsExtension(keypoints) {
-    let shoulder = keypoints[12], elbow = keypoints[14], wrist = keypoints[16];
-    
-    if (!shoulder || !elbow || !wrist) return false;
-    
-    // Ensure wrist is above shoulder level (hand is raised)
-    if (wrist.y > shoulder.y) return false;
-    
-    let elbowAngle = calculateAngle(shoulder, elbow, wrist);
-    
-    // Typical Triceps Extension: Elbow angle > 120° in extended position
-    return elbowAngle > 120;
-}
-
-
-
-function detectLunge(keypoints) {
-    let leftHip = keypoints[23], rightHip = keypoints[24];
-    let leftKnee = keypoints[25], rightKnee = keypoints[26];
-    let leftAnkle = keypoints[27], rightAnkle = keypoints[28];
-
-    if (!leftHip || !rightHip || !leftKnee || !rightKnee || !leftAnkle || !rightAnkle) return false;
-
-    let leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-    let rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
-
-    return (leftKneeAngle < 90 || rightKneeAngle < 90);  
-    // ✅ Lunge detected when at least one knee is bent below 90°
-}
-
-
-function detectLateralRaise(keypoints) {
-    let rightWrist = keypoints[16];
-    let leftWrist = keypoints[15];
-    let rightShoulder = keypoints[12];
-    let leftShoulder = keypoints[11];
-
-    if (!rightWrist || !leftWrist || !rightShoulder || !leftShoulder) return false;
-
-    return rightWrist.y < rightShoulder.y && leftWrist.y < leftShoulder.y;
-}
-
-function detectBicepCurl(keypoints) {
-    let rightShoulder = keypoints[12], rightElbow = keypoints[14], rightWrist = keypoints[16];
-    let leftShoulder = keypoints[11], leftElbow = keypoints[13], leftWrist = keypoints[15];
-    
-    if (!rightShoulder || !rightElbow || !rightWrist || !leftShoulder || !leftElbow || !leftWrist) return false;
-    
-    let rightElbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
-    let leftElbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
-    
-    return rightElbowAngle < 50 || leftElbowAngle < 50; // ✅ Detect curl on either arm
-}
-
-
-function detectSquat(keypoints) {
-    let leftHip = keypoints[23], rightHip = keypoints[24];
-    let leftKnee = keypoints[25], rightKnee = keypoints[26];
-    let leftAnkle = keypoints[27], rightAnkle = keypoints[28];
-
-    if (!leftHip || !rightHip || !leftKnee || !rightKnee || !leftAnkle || !rightAnkle) return false;
-
-    let leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-    let rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
-
-    return (leftKneeAngle < 110 && rightKneeAngle < 110);  
-    // ✅ Squat detected when both knees are bent below 110°
-}
-
-
-function countTricepsExtensions(keypoints) {
-    let shoulder = keypoints[12], elbow = keypoints[14], wrist = keypoints[16];
-    if (!shoulder || !elbow || !wrist) return;
-    
-    let elbowAngle = calculateAngle(shoulder, elbow, wrist);
-    let currentTime = Date.now();
-    
-    if (wrist.y < shoulder.y) { // Ensure hand is above chest
-        if (elbowAngle > 160) stage = "extended";
-        if (elbowAngle < 90 && stage === "extended" && currentTime - lastRepTime > 1000) {
-            stage = "bent";
-            exerciseCounters["Triceps Extension"]++;
-            lastRepTime = currentTime;
-            updateExerciseCounters();
-            unlockExerciseDetection();
-        }
-    }
-}
-
-function countLunges(keypoints) {
-    let leftHip = keypoints[23], rightHip = keypoints[24];
-    let leftKnee = keypoints[25], rightKnee = keypoints[26];
-    let leftAnkle = keypoints[27], rightAnkle = keypoints[28];
-
-    if (!leftHip || !rightHip || !leftKnee || !rightKnee || !leftAnkle || !rightAnkle) return;
-
-    let leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-    let rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
-
-    let currentTime = Date.now();
-
-    if (leftKneeAngle < 90 || rightKneeAngle < 90) {
-        stage = "down"; // ✅ Deep lunge position
-    }
-
-    if ((leftKneeAngle > 160 || rightKneeAngle > 160) && stage === "down" && currentTime - lastRepTime > 1000) {
-        stage = "up"; // ✅ User returns to standing position
-        exerciseCounters["Lunge"]++;
-        lastRepTime = currentTime;
-        updateExerciseCounters();
-        unlockExerciseDetection();
-    }
-}
-
-
-function countLateralRaises(keypoints) {
-    let rightWrist = keypoints[16];
-    let leftWrist = keypoints[15];
-    let rightShoulder = keypoints[12];
-    let leftShoulder = keypoints[11];
-
-    if (!rightWrist || !leftWrist || !rightShoulder || !leftShoulder) return;
-
-    let currentTime = Date.now();
-    
-    if (rightWrist.y < rightShoulder.y && leftWrist.y < leftShoulder.y && currentTime - lastRepTime > 1000) {
-        exerciseCounters["Lateral Raise"]++;
-        lastRepTime = currentTime;
-        updateExerciseCounters();
-        unlockExerciseDetection();
-    }
-}
-
-function countBicepCurls(keypoints) {
-    let rightElbowAngle = calculateAngle(keypoints[12], keypoints[14], keypoints[16]);
-    let leftElbowAngle = calculateAngle(keypoints[11], keypoints[13], keypoints[15]);
-    
-    let currentTime = Date.now();
-    
-    // ✅ Track right arm
-    if (rightElbowAngle > 140) stageRight = "down";
-    if (rightElbowAngle < 40 && stageRight === "down" && currentTime - lastRepTimeRight > 800) {
-        stageRight = "up";
-        exerciseCounters["Bicep Curl"]++;
-        lastRepTimeRight = currentTime;
-        updateExerciseCounters();
-        unlockExerciseDetection();
-    }
-    
-    // ✅ Track left arm
-    if (leftElbowAngle > 140) stageLeft = "down";
-    if (leftElbowAngle < 40 && stageLeft === "down" && currentTime - lastRepTimeLeft > 800) {
-        stageLeft = "up";
-        exerciseCounters["Bicep Curl"]++;
-        lastRepTimeLeft = currentTime;
-        updateExerciseCounters();
-        unlockExerciseDetection();
-    }
-}
-
-
-function countSquats(keypoints) {
-    let leftHip = keypoints[23], rightHip = keypoints[24];
-    let leftKnee = keypoints[25], rightKnee = keypoints[26];
-    let leftAnkle = keypoints[27], rightAnkle = keypoints[28];
-
-    if (!leftHip || !rightHip || !leftKnee || !rightKnee || !leftAnkle || !rightAnkle) return;
-
-    let leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
-    let rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
-
-    let currentTime = Date.now();
-
-    if (leftKneeAngle < 110 && rightKneeAngle < 110) {
-        stage = "down"; // ✅ Deep squat position
-    }
-
-    if (leftKneeAngle > 160 && rightKneeAngle > 160 && stage === "down" && currentTime - lastRepTime > 1000) {
-        stage = "up"; // ✅ User returns to standing position
-        exerciseCounters["Squat"]++;
-        lastRepTime = currentTime;
-        updateExerciseCounters();
-        unlockExerciseDetection();
-    }
-}
-
-
-function calculateAngle(A, B, C) {
-    let a = Math.hypot(B.x - A.x, B.y - A.y);
-    let b = Math.hypot(B.x - C.x, B.y - C.y);
-    let c = Math.hypot(C.x - A.x, C.y - A.y);
-    let angle = Math.acos((a * a + b * b - c * c) / (2 * a * b));
-    return (angle * 180) / Math.PI;
-}
-
-function unlockExerciseDetection() {
-    setTimeout(() => {
-        exerciseLocked = false;
-        detectedExercise = "Unknown";
-        document.getElementById("exercise-name").innerText = "Detecting...";
-    }, 1500); // Short delay before allowing new detection
-}
-
-document.getElementById("exercise").addEventListener("change", function () {
-    selectedExercise = this.value; // ✅ Update selected exercise
-    document.getElementById("exercise-name").innerText = `Exercise: ${selectedExercise}`;
-});
 
 function updateExerciseCounters() {
+    const current = selectedExercise || "Bicep Curl";
+    const count = exerciseCounters[current];
+  
+    document.getElementById("big-count").innerText = count;
+  
     document.getElementById("counter").innerHTML = `
-        Bicep Curls: ${exerciseCounters["Bicep Curl"]} reps<br>
-        Squats: ${exerciseCounters["Squat"]} reps<br>
-        Lateral Raises: ${exerciseCounters["Lateral Raise"]} reps<br>
-        Lunges: ${exerciseCounters["Lunge"]} reps<br>
-        Triceps Extensions: ${exerciseCounters["Triceps Extension"]} reps
+      Bicep Curls: ${exerciseCounters["Bicep Curl"]} reps<br>
+      Squats: ${exerciseCounters["Squat"]} reps<br>
+      Lateral Raises: ${exerciseCounters["Lateral Raise"]} reps<br>
+      Lunges: ${exerciseCounters["Lunge"]} reps<br>
+      Triceps Extensions: ${exerciseCounters["Triceps Extension"]} reps
     `;
+  }
+  
+// --- YOGA --- 
+
+function isTreePose(keypoints) {
+    const leftAnkle = keypoints[27];
+    const rightAnkle = keypoints[28];
+    const leftKnee = keypoints[25];
+    const rightKnee = keypoints[26];
+    const leftHip = keypoints[23];
+    const rightHip = keypoints[24];
+    const leftWrist = keypoints[15];
+    const rightWrist = keypoints[16];
+    const leftElbow = keypoints[13];
+    const rightElbow = keypoints[14];
+  
+    if (!leftAnkle || !rightAnkle || !leftKnee || !rightKnee || !leftHip || !rightHip || !leftWrist || !rightWrist || !leftElbow || !rightElbow) {
+      return false;
+    }
+  
+    // ✅ One leg is lifted (one ankle much higher than the other)
+    const ankleDiff = Math.abs(leftAnkle.y - rightAnkle.y);
+    const oneLegLifted = ankleDiff > 80;
+  
+    // ✅ Hands are close together (distance between wrists small)
+    const wristDistance = Math.hypot(leftWrist.x - rightWrist.x, leftWrist.y - rightWrist.y);
+    const handsTogether = wristDistance < 100;
+  
+    return oneLegLifted && handsTogether;
+  }
+  
+  
+// -------- REP COUNT FUNCTIONS --------
+
+function calculateAngle(A, B, C) {
+  let a = Math.hypot(B.x - A.x, B.y - A.y);
+  let b = Math.hypot(B.x - C.x, B.y - C.y);
+  let c = Math.hypot(C.x - A.x, C.y - A.y);
+  return (Math.acos((a * a + b * b - c * c) / (2 * a * b)) * 180) / Math.PI;
 }
-
-
-setupCamera().then(loadModel);
+function countBicepCurls(keypoints) {
+    const angleR = calculateAngle(keypoints[12], keypoints[14], keypoints[16]);
+    const angleL = calculateAngle(keypoints[11], keypoints[13], keypoints[15]);
+    const now = Date.now();
+  
+    // Right arm
+    if (angleR > 150) stageRight = "down";
+    if (angleR < 40 && stageRight === "down" && now - lastRepTimeRight > 800) {
+      stageRight = "up";
+      exerciseCounters["Bicep Curl"]++;
+      lastRepTimeRight = now;
+    }
+  
+    // Left arm
+    if (angleL > 150) stageLeft = "down";
+    if (angleL < 40 && stageLeft === "down" && now - lastRepTimeLeft > 800) {
+      stageLeft = "up";
+      exerciseCounters["Bicep Curl"]++;
+      lastRepTimeLeft = now;
+    }
+  }
+  
+  function countSquats(keypoints) {
+    const leftKnee = calculateAngle(keypoints[23], keypoints[25], keypoints[27]);
+    const rightKnee = calculateAngle(keypoints[24], keypoints[26], keypoints[28]);
+    const now = Date.now();
+  
+    if (leftKnee < 110 && rightKnee < 110) stage = "down";
+    if (leftKnee > 160 && rightKnee > 160 && stage === "down" && now - lastRepTime > 1000) {
+      stage = "up";
+      exerciseCounters["Squat"]++;
+      lastRepTime = now;
+    }
+  }
+  
+  function countLunges(keypoints) {
+    const leftKnee = calculateAngle(keypoints[23], keypoints[25], keypoints[27]);
+    const rightKnee = calculateAngle(keypoints[24], keypoints[26], keypoints[28]);
+    const now = Date.now();
+  
+    if (leftKnee < 90 || rightKnee < 90) stage = "down";
+    if ((leftKnee > 160 || rightKnee > 160) && stage === "down" && now - lastRepTime > 1000) {
+      stage = "up";
+      exerciseCounters["Lunge"]++;
+      lastRepTime = now;
+    }
+  }
+  
+  function countLateralRaises(keypoints) {
+    const now = Date.now();
+    const leftWristY = keypoints[15].y;
+    const rightWristY = keypoints[16].y;
+    const leftShoulderY = keypoints[11].y;
+    const rightShoulderY = keypoints[12].y;
+  
+    if (leftWristY > leftShoulderY && rightWristY > rightShoulderY) {
+      stage = "down";
+    }
+  
+    if (leftWristY < leftShoulderY && rightWristY < rightShoulderY && stage === "down" && now - lastRepTime > 1000) {
+      stage = "up";
+      exerciseCounters["Lateral Raise"]++;
+      lastRepTime = now;
+    }
+  }
+  
+  function countTricepsExtensions(keypoints) {
+    const angle = calculateAngle(keypoints[12], keypoints[14], keypoints[16]);
+    const wristY = keypoints[16].y;
+    const shoulderY = keypoints[12].y;
+    const now = Date.now();
+  
+    if (wristY < shoulderY && angle > 160) {
+      stage = "up";
+    }
+  
+    if (angle < 90 && stage === "up" && now - lastRepTime > 1000) {
+      stage = "down";
+      exerciseCounters["Triceps Extension"]++;
+      lastRepTime = now;
+    }
+  }
+  

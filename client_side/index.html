@@ -6,21 +6,27 @@
     <title>AI Exercise Tracker</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+<head>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+</head>
 <body>
     <h1>AI Exercise Tracker</h1>
 
     <!-- Exercise Selection -->
     <div id="controls">
-        <label for="exercise">Choose Exercise:</label>
-        <select id="exercise">
-            <option value="Bicep Curl">Bicep Curl</option>
-            <option value="Squat">Squat</option>
-            <option value="Lateral Raise">Lateral Raise</option>
-            <option value="Lunge">Lunge</option>
-            <option value="Triceps Extension">Triceps Extension</option> <!-- ✅ Added Triceps Extension -->
-        </select>
-        <button id="start-button" onclick="startExercise()">Start Exercise</button>
+        <button onclick="startSpecificExercise('Bicep Curl')">Bicep Curl</button>
+        <button onclick="startSpecificExercise('Squat')">Squat</button>
+        <button onclick="startSpecificExercise('Lateral Raise')">Lateral Raise</button>
+        <button onclick="startSpecificExercise('Lunge')">Lunge</button>
+        <button onclick="startSpecificExercise('Triceps Extension')">Triceps Extension</button>
+        <button onclick="startYoga()">Yoga 🧘</button>
+
     </div>
+      
 
     <!-- Video & Canvas -->
     <div id="container">
@@ -31,8 +37,22 @@
     <!-- Exercise Display -->
     <div id="output">
         <p id="exercise-name">Exercise: None</p>
-        <p id="counter">Bicep Curls: 0 | Squats: 0 | Lateral Raises: 0 | Lunges: 0 | Triceps Extensions: 0</p> <!-- ✅ Updated Counter -->
-    </div>
+      
+        <div id="big-counter">
+          <span id="big-count">0</span>
+          <p id="big-label">Reps</p>
+        </div>
+      
+        <p id="counter">
+          Bicep Curls: 0 | Squats: 0 | Lateral Raises: 0 | Lunges: 0 | Triceps Extensions: 0
+        </p>
+      </div>
+      
+      <div id="yoga-timer" style="text-align: center; margin-top: 10px; font-size: 36px; font-weight: bold; color: green;">
+        Yoga Hold Time: <span id="yoga-seconds">0</span>s
+      </div>
+      
+      
 
     <!-- Scripts (Moved to End for Performance) -->
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>

@@ -1,52 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🧘 Yoga Pose Trainer</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Exercise Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<head>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <select id="pose-selector">
-        <option value="Tree">Tree</option>
-        <option value="Mountain">Mountain</option>
-        <option value="Warrior">Warrior</option>
-        <option value="Cobra">Cobra</option>
-      </select>
+    <h1>AI Exercise Tracker</h1>
+
+    <!-- Exercise Selection -->
+    <div id="controls">
+        <button onclick="startSpecificExercise('Bicep Curl')">Bicep Curl</button>
+        <button onclick="startSpecificExercise('Squat')">Squat</button>
+        <button onclick="startSpecificExercise('Lateral Raise')">Lateral Raise</button>
+        <button onclick="startSpecificExercise('Lunge')">Lunge</button>
+        <button onclick="startSpecificExercise('Triceps Extension')">Triceps Extension</button>
+        <button onclick="startYoga()">Yoga 🧘</button>
+
     </div>
-
-    <div class="pose-info" id="pose-instructions">
-      <ul>
-        <li>Get into position. Tree pose often starts from mountain pose...</li>
-        <li>Bend one leg at the knee. Choose the leg you are going to fold in first...</li>
-        <li>Lengthen your body. Clasp your hands together in Anjali Mudra...</li>
-        <li>Hold and repeat. Hold the pose as long as necessary...</li>
-      </ul>
-      <button id="start-btn">Start Pose</button>
-    </div>
-
-    <div class="main">
-      <div class="stats" id="stats">
-        <div>Pose Time: <span id="pose-time">0</span>s</div>
-        <div>Best: <span id="best-time">0</span>s</div>
-        <button id="stop-btn">Stop Pose</button>
-      </div>
-
-      <div class="camera">
-        <video id="video" autoplay muted playsinline></video>
-        <canvas id="canvas"></canvas>
-      </div>
       
 
-      <div class="pose-visual">
-        <img src="tree_pose.png" alt="Pose Guide" id="pose-image">
-      </div>
+    <!-- Video & Canvas -->
+    <div id="container">
+        <video id="video" width="1000" height="600" autoplay></video>
+        <canvas id="canvas"></canvas>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-  <script src="script.js"></script>
+    <!-- Exercise Display -->
+    <div id="output">
+        <p id="exercise-name">Exercise: None</p>
+      
+        <div id="big-counter">
+          <span id="big-count">0</span>
+          <p id="big-label">Reps</p>
+        </div>
+      
+        <p id="counter">
+          Bicep Curls: 0 | Squats: 0 | Lateral Raises: 0 | Lunges: 0 | Triceps Extensions: 0
+        </p>
+      </div>
+      
+      <div id="yoga-timer" style="text-align: center; margin-top: 10px; font-size: 36px; font-weight: bold; color: green;">
+        Yoga Hold Time: <span id="yoga-seconds">0</span>s
+      </div>
+      
+      
+
+    <!-- Scripts (Moved to End for Performance) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <script defer src="script.js"></script>
 </body>
 </html>
