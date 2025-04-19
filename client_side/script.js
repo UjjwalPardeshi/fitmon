@@ -11,6 +11,7 @@ let detector = null;
 let yogaTimer = null;
 let yogaStartTime = null;
 let yogaSeconds = 0;
+
 let exerciseCounters = {
   "Bicep Curl": 0,
   "Squat": 0,
@@ -28,52 +29,60 @@ const exerciseList = {
 };
 
 
+const yogaPoseCheck = {
+    "Tree": isTreePose,
+    "Chair": isChairPose,
+    "Warrior": isWarriorPose,
+    "Mountain": isMountainPose
+  };
+  let selectedYogaPose = "Tree";
 
-function startYoga() {
-  selectedExercise = "Yoga";
-  document.getElementById("exercise-name").innerText = "Exercise: Yoga 🧘";
-  document.getElementById("yoga-seconds").innerText = "0";
-  setupCamera().then(() => {
-    loadModel().then(() => {
-      detectYogaPose(); // Not detectPose()
+  function startYogaPose(poseName) {
+    selectedYogaPose = poseName;
+    selectedExercise = "Yoga";
+    document.getElementById("exercise-name").innerText = `Exercise: Yoga – ${poseName}`;
+    document.getElementById("yoga-seconds").innerText = "0";
+    setupCamera().then(() => {
+      loadModel().then(() => {
+        detectYogaPose();
+      });
     });
-  });
-}
-
-async function detectYogaPose() {
-  if (!detector || video.paused || video.ended) return;
-
-  const poses = await detector.estimatePoses(video);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  if (poses.length > 0 && poses[0].keypoints) {
-    const keypoints = poses[0].keypoints;
-    drawPose(keypoints);
-
-    const isCorrect = isTreePose(keypoints);
-
-    if (isCorrect) {
-      if (!yogaStartTime) {
-        yogaStartTime = Date.now();
-        yogaTimer = setInterval(() => {
-          yogaSeconds = Math.floor((Date.now() - yogaStartTime) / 1000);
-          document.getElementById("yoga-seconds").innerText = yogaSeconds;
-        }, 1000);
-      }
-    } else {
-      if (yogaTimer) {
-        clearInterval(yogaTimer);
-        yogaTimer = null;
-        yogaStartTime = null;
-        yogaSeconds = 0;
-        document.getElementById("yoga-seconds").innerText = "0";
-      }
-    }
   }
-
-  requestAnimationFrame(detectYogaPose);
-}
+  
+  function detectYogaPose() {
+    if (!detector || video.paused || video.ended) return;
+  
+    detector.estimatePoses(video).then(poses => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+      if (poses.length > 0) {
+        const keypoints = poses[0].keypoints;
+        drawPose(keypoints);
+  
+        const isCorrect = yogaPoseCheck[selectedYogaPose](keypoints);
+  
+        if (isCorrect) {
+          if (!yogaStartTime) {
+            yogaStartTime = Date.now();
+            yogaTimer = setInterval(() => {
+              yogaSeconds = Math.floor((Date.now() - yogaStartTime) / 1000);
+              document.getElementById("yoga-seconds").innerText = yogaSeconds;
+            }, 1000);
+          }
+        } else {
+          clearInterval(yogaTimer);
+          yogaTimer = null;
+          yogaStartTime = null;
+          yogaSeconds = 0;
+          document.getElementById("yoga-seconds").innerText = "0";
+        }
+      }
+  
+      requestAnimationFrame(detectYogaPose);
+    });
+  }
+  
 
 
 
@@ -200,6 +209,50 @@ function isTreePose(keypoints) {
   
     return oneLegLifted && handsTogether;
   }
+
+  
+  function isChairPose(keypoints) {
+    const leftKnee = calculateAngle(keypoints[23], keypoints[25], keypoints[27]);
+    const rightKnee = calculateAngle(keypoints[24], keypoints[26], keypoints[28]);
+    const leftWrist = keypoints[15], rightWrist = keypoints[16];
+    const leftShoulder = keypoints[11], rightShoulder = keypoints[12];
+    const kneesBent = leftKnee < 100 && rightKnee < 100;
+    const armsUp = leftWrist.y < leftShoulder.y && rightWrist.y < rightShoulder.y;
+    return kneesBent && armsUp;
+  }
+  
+  function isWarriorPose(keypoints) {
+    const leftKneeAngle = calculateAngle(keypoints[23], keypoints[25], keypoints[27]);
+    const rightKneeAngle = calculateAngle(keypoints[24], keypoints[26], keypoints[28]);
+  
+    const leftShoulder = keypoints[11];
+    const rightShoulder = keypoints[12];
+    const leftWrist = keypoints[15];
+    const rightWrist = keypoints[16];
+  
+    if (!leftKneeAngle || !rightKneeAngle || !leftShoulder || !rightShoulder || !leftWrist || !rightWrist) return false;
+  
+    const oneLegBent = (leftKneeAngle < 120 || rightKneeAngle < 120);
+    const otherLegStraight = (leftKneeAngle > 150 || rightKneeAngle > 150);
+  
+    const wristsAligned = Math.abs(leftWrist.y - leftShoulder.y) < 40 && Math.abs(rightWrist.y - rightShoulder.y) < 40;
+    const armsExtended = Math.abs(leftWrist.x - rightWrist.x) > 300;
+  
+    return oneLegBent && otherLegStraight && wristsAligned && armsExtended;
+  }
+  
+  
+  function isMountainPose(keypoints) {
+    const leftWrist = keypoints[15], rightWrist = keypoints[16];
+    const leftShoulder = keypoints[11], rightShoulder = keypoints[12];
+    const leftHip = keypoints[23], rightHip = keypoints[24];
+  
+    const armsDown = leftWrist.y > leftShoulder.y && rightWrist.y > rightShoulder.y;
+    const symmetric = Math.abs(leftShoulder.y - rightShoulder.y) < 40 &&
+                      Math.abs(leftHip.y - rightHip.y) < 40;
+    return armsDown && symmetric;
+  }
+  
   
   
 // -------- REP COUNT FUNCTIONS --------
